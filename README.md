@@ -1,4 +1,4 @@
-# csgo-matchbot
+# CS:GO Match Bot
 A CS:GO match management bot. Powered by Laravel. Licensed under the GNU GPL v3.
 
 ## Laravel PHP Framework
