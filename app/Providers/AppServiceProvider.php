@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Providers;
+namespace Bot\Providers;
 
 use Illuminate\Support\ServiceProvider;
 

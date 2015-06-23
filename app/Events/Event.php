@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Events;
+namespace Bot\Events;
 
 abstract class Event
 {

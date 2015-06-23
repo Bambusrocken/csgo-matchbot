@@ -1,5 +1,5 @@
 suites:
     main:
-        namespace: App
-        psr4_prefix: App
+        namespace: Bot
+        psr4_prefix: Bot
         src_path: app
