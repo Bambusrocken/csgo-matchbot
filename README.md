@@ -8,7 +8,7 @@ A CS:GO match management bot. Powered by Laravel. Licensed under the GNU GPL v3.
 
 ## Installing the BOT
 ##### Since this BOT is still not complete, this is a rough draft of how the system will work once finished. Things may change without prior notice.
-##### As this is a fully automated system with extreme web integration, a web server capable of running Laravel with "Pretty URLs" is required. Apache 2.4 or Nginx work, as long as you copy your .htaccess file correctly in the "public" directory. There's a .htaccess.<web-server-name> file for each server, rename accordingly.
+##### As this is a fully automated system with extreme web integration, a web server capable of running Laravel with "Pretty URLs" is required. Apache 2.4 or Nginx work, as long as you copy your .htaccess file correctly in the "public" directory. There's a .htaccess.[web-server-name] file for each server, rename accordingly.
 ###### Copy the BOT to the web server path you want it to run in;
 ###### Rename the .env.example file to .env;
 ###### Edit the .env file with your own information;
