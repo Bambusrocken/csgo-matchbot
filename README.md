@@ -12,7 +12,7 @@ A CS:GO match management bot. Powered by Laravel. Licensed under the GNU GPL v3.
 ###### Copy the BOT to the web server path you want it to run in;
 ###### Rename the .env.example file to .env;
 ###### Edit the .env file with your own information;
-###### Open a command line in the folder of the bot and run the command "php artisan migrate"
+###### Open a command line in the folder of the bot and run the command "php artisan bot:install"
 ###### Profit, profit, profit.
 
 ## Running the BOT
