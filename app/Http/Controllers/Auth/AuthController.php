@@ -5,6 +5,7 @@ namespace Bot\Http\Controllers\Auth;
 use Bot\User;
 use Validator;
 use Bot\Http\Controllers\Controller;
+use Illuminate\Foundation\Auth\ThrottlesLogins;
 use Illuminate\Foundation\Auth\AuthenticatesAndRegistersUsers;
 
 class AuthController extends Controller
@@ -20,7 +21,7 @@ class AuthController extends Controller
     |
     */
 
-    use AuthenticatesAndRegistersUsers;
+    use AuthenticatesAndRegistersUsers, ThrottlesLogins;
 
     /**
      * Create a new authentication controller instance.

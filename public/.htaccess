@@ -3,7 +3,14 @@
         Options -MultiViews
     </IfModule>
 
+    Options +FollowSymLinks
+
     RewriteEngine On
+
+    # Setting RewriteBase to /
+    # The RewriteBase is dynamically calculated and applied in the last RewriteCond and in the last RewriteRule
+    # These lines are different from Laravel's default .htaccess
+    RewriteBase /
 
     # Redirect Trailing Slashes...
     RewriteRule ^(.*)/$ /$1 [L,R=301]
@@ -11,5 +18,8 @@
     # Handle Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
+    # This line and the next one are different from Laravel's default .htaccess
+    # This logic dynamically calculates the RewriteBase and applies it to the URL, without needing to specify one RewriteBase by the user
+    RewriteCond $0#%{REQUEST_URI} ([^#]*)#(.*)\1$
+    RewriteRule ^.*$ %2index.php [QSA,L]
 </IfModule>

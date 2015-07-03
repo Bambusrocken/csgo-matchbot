@@ -1,6 +1,24 @@
 # CS:GO Match Bot
 A CS:GO match management bot. Powered by Laravel. Licensed under the GNU GPL v3.
 
+## Minimum Requirements
+##### PHP 5.5 compiled with ZTS (Zend Thread Safety)
+##### PHP Installation and Web Server that respect the minimum requirements of the Laravel Framework version 5.1
+##### PHP Extension PThreads (http://php.net/manual/en/book.pthreads.php) (Installation Instructions here: http://php.net/manual/en/pthreads.installation.php)
+
+## Installing the BOT
+##### Since this BOT is still not complete, this is a rough draft of how the system will work once finished. Things may change without prior notice.
+##### As this is a fully automated system with extreme web integration, a web server capable of running Laravel with "Pretty URLs" is required. Apache 2.4 or Nginx work, as long as you copy your .htaccess file correctly in the "public" directory. There's a .htaccess.<web-server-name> file for each server, rename accordingly.
+###### Copy the BOT to the web server path you want it to run in;
+###### Rename the .env.example file to .env;
+###### Edit the .env file with your own information;
+###### Open a command line in the folder of the bot and run the command "php artisan migrate"
+###### Profit, profit, profit.
+
+## Running the BOT
+##### Since this BOT is still not complete, this is a rough draft of how the system will work once finished. Things may change without prior notice.
+###### Running the bot should be as simple as opening a command line on the bot's folder and running the command "php artisan bot:run" and starting your web server.
+
 ## Laravel PHP Framework
 
 [![Build Status](https://travis-ci.org/laravel/framework.svg)](https://travis-ci.org/laravel/framework)
