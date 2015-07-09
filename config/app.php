@@ -95,7 +95,7 @@ return [
     |
     */
 
-    'log' => 'single',
+    'log' => 'daily',
 
     /*
     |--------------------------------------------------------------------------
@@ -143,6 +143,11 @@ return [
         Bot\Providers\AppServiceProvider::class,
         Bot\Providers\EventServiceProvider::class,
         Bot\Providers\RouteServiceProvider::class,
+
+        /*
+         * External Service Providers...
+         */
+        Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class,
 
     ],
 

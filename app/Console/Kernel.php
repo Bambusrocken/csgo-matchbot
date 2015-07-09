@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         \Bot\Console\Commands\Inspire::class,
+        \Bot\Console\Commands\RunBotCommand::class,
     ];
 
     /**
