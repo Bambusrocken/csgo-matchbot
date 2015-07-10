@@ -80,7 +80,7 @@ class RunBotCommand extends Command
             //Check if $shutdown is true: if it is, add to the top of the queue a special shutdown instruction that indicates to the match that we're shutting down
             //Run bot logic: process instruction queue
             Log::info("Test");
-            $data = $socket->getMessageQueue()->pop();
+            $data = $socket->getMessageQueue()->pop(); // Figure out why this is a blocking call
 
             if($data)
             {
