@@ -2,6 +2,10 @@
 
 namespace Bot\Providers;
 
+use Log;
+
+use Bot\MatchManagement\UDPSocket;
+use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -13,7 +17,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        $this->app->singleton('Bot\MatchManager\UDPSocket', function(Application $app) {
+            return new UDPSocket();
+        });
     }
 
     /**

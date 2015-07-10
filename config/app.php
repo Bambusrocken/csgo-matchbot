@@ -26,7 +26,18 @@ return [
     |
     */
 
-    'url' => 'http://localhost',
+    'url' => env('APP_URL', "http://localhost"),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Listening IP
+    |--------------------------------------------------------------------------
+    |
+    | This values stores the local IP address of the interface to be used for listening to incoming log data from game servers.
+    | Setting to 0.0.0.0:27050 will accept on any local interface on port 27050.
+    |
+    */
+    'ipport' => env('APP_IP', '0.0.0.0:27050'),
 
     /*
     |--------------------------------------------------------------------------
@@ -91,11 +102,13 @@ return [
     | the box, Laravel uses the Monolog PHP logging library. This gives
     | you a variety of powerful log handlers / formatters to utilize.
     |
-    | Available Settings: "single", "daily", "syslog", "errorlog"
+    | Available Settings for log: "single", "daily", "syslog", "errorlog"
+    | Available Settings for loglevel: "emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"
     |
     */
 
     'log' => 'daily',
+    'loglevel' => env('APP_LOGLEVEL', 'info'),
 
     /*
     |--------------------------------------------------------------------------
