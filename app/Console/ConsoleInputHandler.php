@@ -47,7 +47,7 @@ class ConsoleInputHandler extends Thread{
             {
                 // Shutting down should set a special variable $shutdown to true
                 $this->_stackable[] = [
-                    Bot::INSTRUCTION_TYPE => Bot::INSTRUCTION_SHUTDOWN
+                    'type' => 'shutdown'
                 ];
 
                 break;
@@ -57,10 +57,10 @@ class ConsoleInputHandler extends Thread{
             if($line != null || $line != "")
             {
                 $this->_stackable[] = [ // Remember: This is data
-                    Bot::INSTRUCTION_TYPE => Bot::INSTRUCTION_BOTLOG, // Data type
-                    Bot::BOTLOG_LEVEL => 'info', // Data information: Log level (string)
-                    Bot::BOTLOG_MESSAGE => "Unknown command.", // Data information: Log message
-                    Bot::BOTLOG_ARGS => [ 'command' => $line ] // Data information: Log arguments
+                    'type' => 'botlog', // Data type
+                    'loglevel' => 'info', // Data information: Log level (string)
+                    'message' => "Unknown command.", // Data information: Log message
+                    'args' => [ 'command' => $line ] // Data information: Log arguments
                 ];
             }
         }

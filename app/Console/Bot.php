@@ -35,23 +35,9 @@ use Stackable;
 /**
  * Main bot class. Handles all of the BOT logic.
  *
- * @package Bot
+ * @package Bot\Console
  */
 class Bot {
-    const INSTRUCTION_TYPE = 0;
-
-    const INSTRUCTION_SHUTDOWN = 0;
-
-    const INSTRUCTION_BOTLOG = 1;
-    const BOTLOG_LEVEL = 1;
-    const BOTLOG_MESSAGE = 2;
-    const BOTLOG_ARGS = 3;
-
-    const INSTRUCTION_SERVERLOG = 2;
-    const SERVERLOG_IP = 1;
-    const SERVERLOG_PORT = 2;
-    const SERVERLOG_MESSAGE = 3;
-
     // Don't forget to change tick interval in GameServerListenThread
     const TICK_INTERVAL = 7.8125; // Tick interval in milliseconds, for 128 ticks type 7.8125, for 64 ticks type 15.625, for another tickrate just calculate (1/<tickrate>)*1000
 
@@ -96,26 +82,26 @@ class Bot {
                 // Instruction 1 means BOTLOG, which is an internal thing of the bot to tell the main loop it should log something to the user console (and files)
                 // Instruction 2 means SERVERLOG, which means that the array contains data received from a game server
 
-                if($instruction[self::INSTRUCTION_TYPE] == self::INSTRUCTION_SHUTDOWN)
+                if($instruction['type'] == 'shutdown')
                 {
                     break;
                 }
 
-                if($instruction[self::INSTRUCTION_TYPE] == self::INSTRUCTION_BOTLOG)
+                if($instruction['type'] == 'botlog')
                 {
                     //Data array structure should be:
-                    // $data[0] == 'botlog' (string)
-                    // $data[1] == Log level (string)
-                    // $data[2] == Log message (string)
-                    // $data[3] == Log arguments (array)
+                    // $data['type'] == 'botlog' (string)
+                    // $data['loglevel'] == Log level (string)
+                    // $data['message'] == Log message (string)
+                    // $data['args'] == Log arguments (array)
                     Log::getMonolog()->addRecord(
-                        constant("\\Monolog\\Logger::" . strtoupper($instruction[self::BOTLOG_LEVEL])),
-                        $instruction[self::BOTLOG_MESSAGE],
-                        $instruction[self::BOTLOG_ARGS]
+                        constant("\\Monolog\\Logger::" . strtoupper($instruction['loglevel'])),
+                        $instruction['message'],
+                        $instruction['args']
                     );
                 }
 
-                if($instruction[self::INSTRUCTION_TYPE] == self::INSTRUCTION_SERVERLOG)
+                if($instruction['type'] == 'serverlog')
                 {
                     //Data array structure should be:
                     // $data[0] == 'serverlog' (string)
@@ -123,9 +109,9 @@ class Bot {
                     // $data[2] == Port (string)
                     // $data[3] == Log message (string)
                     Log::debug("Received ServerLog", [
-                        'ip' => $instruction[self::SERVERLOG_IP],
-                        'port' => $instruction[self::SERVERLOG_PORT],
-                        'message' => $instruction[self::SERVERLOG_MESSAGE]
+                        'ip' => $instruction['ip'],
+                        'port' => $instruction['port'],
+                        'message' => $instruction['message']
                     ]);
                 }
             }
