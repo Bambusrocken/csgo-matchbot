@@ -1,14 +1,38 @@
 <?php
+/*
+ * D4rKDeagle's Bot: A CS:GO Match Management Bot
+ * Copyright (c) 2015 D4rKDeagle
+ *
+ * This file is part of D4rKDeagle's Bot.
+ * D4rKDeagle's Bot is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * D4rKDeagle's Bot is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with D4rKDeagle's Bot.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * The Laravel Framework is used in this project.
+ * Laravel Framework Version 5.1
+ * Copyright (c) <Taylor Otwell>
+ *
+ */
 
 namespace Bot\Console\Commands;
 
-use Config;
-use Log;
-
+use Bot\Console\Bot;
+use Bot\MatchManagement\StackableQueueWrapper;
 use Bot\MatchManagement\UDPSocket;
+use Config;
 use Illuminate\Console\Command;
-use Monolog\Logger;
+use Log;
 use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 
 class RunBotCommand extends Command
 {
@@ -17,6 +41,7 @@ class RunBotCommand extends Command
      *
      * @var string
      */
+
     protected $signature = 'bot:run';
 
     /**
@@ -24,6 +49,7 @@ class RunBotCommand extends Command
      *
      * @var string
      */
+
     protected $description = 'Run the bot.';
 
     /**
@@ -31,6 +57,7 @@ class RunBotCommand extends Command
      *
      * @return void
      */
+
     public function __construct()
     {
         parent::__construct();
@@ -50,59 +77,18 @@ class RunBotCommand extends Command
             exit;
         }
 
-        unset($logLevel); // Memory cleanup, even though just a tiny bit used, in the end if you add it all up it's a lot and because this process is going, most likely, to be open for a long time, memory is a concern
+        unset($logLevel);
     }
 
     /**
      * Execute the console command.
      *
+     * @param Bot $bot
      * @return mixed
      */
-    public function handle()
+
+    public function handle(Bot $bot)
     {
-        stream_set_blocking(STDIN, false);
-
-        $socket = new UDPSocket();
-
-        $socket->start();
-
-        while(true)
-        {
-            //Main bot loop
-            //Handle udp packets and put them in the appropriate instruction queue
-            //Handle Websockets packets and process them, putting anything that the bot should handle in the appropriate instruction queue
-            //Run the tick() or run() method (not sure what to call it) on every match manager
-            //Run any other necessary logic
-            //Check for $shutdown
-            //Handle console input (Might remove this feature in the future, just because it seems I'm not gonna have any commands to put here)
-
-            //Main loop for each match manager
-            //Check if $shutdown is true: if it is, add to the top of the queue a special shutdown instruction that indicates to the match that we're shutting down
-            //Run bot logic: process instruction queue
-            Log::info("Test");
-            $data = $socket->getMessageQueue()->pop(); // Figure out why this is a blocking call
-
-            if($data)
-            {
-                Log::info($data);
-            }
-
-            $line = strtolower(trim(fgets(STDIN)));
-
-            if($line == "quit" || $line == "exit")
-            {
-                // Shutting down should set a special variable $shutdown to true
-                Log::info("Shutting down...");
-                break;
-            }
-
-            // Only process at the end
-            if($line != null || $line != "")
-            {
-                Log::info("Unknown command.", [ 'command' => $line ]);
-            }
-        }
-
-        $socket->kill();
+        $bot->run();
     }
 }

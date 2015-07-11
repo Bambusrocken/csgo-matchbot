@@ -23,34 +23,15 @@
  *
  */
 
-namespace Bot\Console;
+namespace Bot\Util;
 
-use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
-class Kernel extends ConsoleKernel
-{
-    /**
-     * The Artisan commands provided by your application.
-     *
-     * @var array
-     */
+class StackableQueueWrapper {
 
-    protected $commands = [
-        \Bot\Console\Commands\Inspire::class,
-        \Bot\Console\Commands\RunBotCommand::class,
-    ];
-
-    /**
-     * Define the application's command schedule.
-     *
-     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
-     * @return void
-     */
-
-    protected function schedule(Schedule $schedule)
+    public static function pop($stackable)
     {
-        //$schedule->command('inspire')
-        //        ->hourly();
+        $data = reset($stackable);
+        unset($stackable[key($stackable)]);
+        return $data;
     }
 }
