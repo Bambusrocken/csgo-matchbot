@@ -60,7 +60,7 @@ class GameServerListenThread extends Thread {
 
     public function run()
     {
-        $this->_socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP) or die("Could not create UDP socket");
+        $this->_socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP) or die("Could not create UDP socket"); // TODO: Add IPv6 support
         socket_bind($this->_socket, $this->_ipPort[0], $this->_ipPort[1]) or die("Failed to bind socket");
         socket_set_nonblock($this->_socket);
 
@@ -80,17 +80,18 @@ class GameServerListenThread extends Thread {
             if(!@socket_recvfrom($this->_socket, $buffer, 4096, 0, $remoteIp, $remotePort))
             {
                 $lastError = socket_last_error($this->_socket);
-                if($lastError == 0 /*|| $lastError == 10004*/) break; // Thread shutting down error to unblock the blocking call, no need to log
+                if($lastError == 0) break; // Thread shutting down error to unblock the blocking call, no need to log
 
                 echo "Socket error num: " . $lastError . ", Socket error string: " . socket_strerror($lastError) . PHP_EOL;
+                continue;
             }
 
             // TODO: Figure out why pthreads doesn't let me access the class "Bot" from here
             $this->_stackable[] = [
-                0 => 2,
-                1 => $remoteIp,
-                2 => $remotePort,
-                3 => $buffer
+                'type' => 'serverlog',
+                'ip' => $remoteIp,
+                'port' => $remotePort,
+                'message' => $buffer
             ];
         }
 

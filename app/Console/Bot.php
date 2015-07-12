@@ -27,7 +27,7 @@ namespace Bot\Console;
 
 use Bot\MatchManagement\Contracts\MatchManager;
 use Bot\MatchManagement\GameServerListenThread;
-use Bot\Util\StackableQueueWrapper;
+use Bot\Util\ProcessingQueueHelper;
 use Log;
 use Monolog\Logger;
 use Stackable;
@@ -75,7 +75,7 @@ class Bot {
             //Check if $shutdown is true: if it is, add to the top of the queue a special shutdown instruction that indicates to the match that we're shutting down
             //Run bot logic: process instruction queue
 
-            $instruction = StackableQueueWrapper::pop($this->_stackable);
+            $instruction = ProcessingQueueHelper::pop($this->_stackable);
 
             if($instruction != false) {
                 // The instruction array always contains an item, $instruction[0], which has a string specifying the type of instruction we should process

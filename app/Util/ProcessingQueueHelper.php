@@ -25,8 +25,7 @@
 
 namespace Bot\Util;
 
-
-class StackableQueueWrapper {
+class ProcessingQueueHelper {
 
     public static function pop($stackable)
     {

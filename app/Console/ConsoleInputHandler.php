@@ -27,7 +27,8 @@ namespace Bot\Console;
 
 use Thread;
 
-class ConsoleInputHandler extends Thread{
+class ConsoleInputHandler extends Thread
+{
 
     private $_stackable;
 
@@ -40,12 +41,20 @@ class ConsoleInputHandler extends Thread{
     {
         while(true)
         {
+            // TODO: Make this detect if any artisan command is registered by the issued name and execute it if it exists
+
             $stdin = fopen('php://stdin', 'r');
 
             $line = strtolower(trim(fgets($stdin)));
+
+            if($line == "help" || $line == "?")
+            {
+                $this->logMessage('Available commands: "help", "quit"');
+                continue;
+            }
+
             if($line == "quit" || $line == "exit")
             {
-                // Shutting down should set a special variable $shutdown to true
                 $this->_stackable[] = [
                     'type' => 'shutdown'
                 ];
@@ -56,15 +65,27 @@ class ConsoleInputHandler extends Thread{
             // Only process at the end
             if($line != null || $line != "")
             {
-                $this->_stackable[] = [ // Remember: This is data
+                /*$this->_stackable[] = [ // Remember: This is data
                     'type' => 'botlog', // Data type
                     'loglevel' => 'info', // Data information: Log level (string)
-                    'message' => "Unknown command.", // Data information: Log message
+                    'message' => "Unknown command. Type \"help\" for help.", // Data information: Log message
                     'args' => [ 'command' => $line ] // Data information: Log arguments
-                ];
+                ]; // */
+
+                $this->logMessage('Unknown command. Type "help" for help.', [ 'command' => $line ]);
             }
         }
 
         $this->kill();
+    }
+
+    private function logMessage($message, $args = [])
+    {
+        $this->_stackable[] = [
+            'type' => 'botlog',
+            'loglevel' => 'info',
+            'message' => $message,
+            'args' => $args
+        ];
     }
 }
