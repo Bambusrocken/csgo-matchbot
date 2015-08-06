@@ -33,12 +33,12 @@ class GameServerListenThread extends Thread {
 
     private $_stackable;
 
+    private $_shutdown = false;
+
     private $_socket;
     private $_ipPort;
 
     private $_tickinterval;
-
-    private $_shutdown = false;
 
     public function __construct($stackable, $tickinterval)
     {

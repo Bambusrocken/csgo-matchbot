@@ -75,9 +75,9 @@ class Bot {
             //Check if $shutdown is true: if it is, add to the top of the queue a special shutdown instruction that indicates to the match that we're shutting down
             //Run bot logic: process instruction queue
 
-            $instruction = ProcessingQueueHelper::pop($this->_stackable);
+            while(($instruction = ProcessingQueueHelper::pop($this->_stackable) != false))
+            {
 
-            if($instruction != false) {
                 // The instruction array always contains an item, $instruction[0], which has a string specifying the type of instruction we should process
                 // Instruction 1 means BOTLOG, which is an internal thing of the bot to tell the main loop it should log something to the user console (and files)
                 // Instruction 2 means SERVERLOG, which means that the array contains data received from a game server
@@ -113,6 +113,12 @@ class Bot {
                         'port' => $instruction['port'],
                         'message' => $instruction['message']
                     ]);
+                }
+
+                if($instruction['type'] == 'web')
+                {
+                    // Instructions that come from the web: either from web sockets or from long polling
+
                 }
             }
 
