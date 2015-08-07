@@ -25,9 +25,10 @@
 
 namespace Bot\Console;
 
+use Bot\Console\WebSocket\WebSocketServer;
 use Bot\MatchManagement\Contracts\MatchManager;
 use Bot\MatchManagement\GameServerListenThread;
-use Bot\Util\ProcessingQueueHelper;
+use Config;
 use Log;
 use Monolog\Logger;
 use Stackable;
@@ -47,6 +48,7 @@ class Bot {
 
     private $_consoleThread;
     private $_gameserverListenThread;
+    private $_websocketServerThread;
 
     public function __construct(MatchManager $matchManager)
     {
@@ -56,11 +58,20 @@ class Bot {
 
         $this->_consoleThread = new ConsoleInputHandler($this->_stackable);
         $this->_gameserverListenThread = new GameServerListenThread($this->_stackable, self::TICK_INTERVAL);
+
+        $ipport = explode(':', Config::get('app.ipport'));
+        $ip = $ipport[0];
+        $port = $ipport[1];
+        Log::debug("IP Port", [$ip, $port]);
+        $this->_websocketServerThread = new WebSocketServer($ip, $port, 2048, $this->_stackable, self::TICK_INTERVAL);
     }
 
     public function run() {
+        $shutdown = false;
+
         $this->_consoleThread->start();
         $this->_gameserverListenThread->start();
+        $this->_websocketServerThread->start();
 
         while(true) {
             //Main bot loop
@@ -75,8 +86,11 @@ class Bot {
             //Check if $shutdown is true: if it is, add to the top of the queue a special shutdown instruction that indicates to the match that we're shutting down
             //Run bot logic: process instruction queue
 
-            while(($instruction = ProcessingQueueHelper::pop($this->_stackable) != false))
+            foreach($this->_stackable as $key => $instruction)
             {
+                unset($this->_stackable[$key]);
+
+                Log::debug("Processing instruction", [$instruction]);
 
                 // The instruction array always contains an item, $instruction[0], which has a string specifying the type of instruction we should process
                 // Instruction 1 means BOTLOG, which is an internal thing of the bot to tell the main loop it should log something to the user console (and files)
@@ -84,6 +98,7 @@ class Bot {
 
                 if($instruction['type'] == 'shutdown')
                 {
+                    $shutdown = true;
                     break;
                 }
 
@@ -122,9 +137,17 @@ class Bot {
                 }
             }
 
+            if($shutdown)
+                break;
+
+            // TODO: Tick every match manager
+
             usleep(self::TICK_INTERVAL);
         }
 
+        Log::info("Starting shutdown");
+
+        $this->_websocketServerThread->kill();
         $this->_gameserverListenThread->kill();
         $this->_consoleThread->kill();
 

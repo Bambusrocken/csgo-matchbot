@@ -55,7 +55,7 @@ class GameServerListenThread extends Thread {
     {
         parent::start($options);
 
-        Log::info("Starting thread", [ 'id' => $this->getThreadId() ]); // Acceptable because it's being called from the main thread
+        Log::info("Starting GameServerListenThread thread", [ 'id' => $this->getThreadId() ]); // Acceptable because it's being called from the main thread
     }
 
     public function run()
@@ -104,6 +104,6 @@ class GameServerListenThread extends Thread {
 
         $this->_shutdown = true;
 
-        Log::info("Destroyed thread", [ 'id' => $this->getThreadId() ]); // Acceptable because it's being called from the main thread
+        Log::info("Destroyed GameServerListenThread thread", [ 'id' => $this->getThreadId() ]); // Acceptable because it's being called from the main thread
     }
 }

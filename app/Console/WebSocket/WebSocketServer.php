@@ -27,20 +27,24 @@
  * All rights reserved.
  */
 
-// Any lines that have been modified from the original file will be marked with "// Bot Changed"
+// Any lines that have been modified from the original file will be marked with some form of "// Bot Changed" in case I need to update this class from the original PHP-WebSockets repository
 
 //require_once('./daemonize.php');
-//require_once('./WebSocketUser.php');
+//require_once('./WebSocketUser.php'); // Bot Changed
 
 namespace Bot\Console\WebSocket;
 
+use Log;
 use Stackable;
 use Thread;
 
 class WebSocketServer extends Thread {
 
+    private $_shutdown = false; // Bot Changed
+
     protected $addr, $port; // Bot Changed
-    protected $stackable;
+    protected $stackable; // Bot Changed
+    protected $tickinterval; // Bot Changed
 
     protected $userClass = 'WebSocketUser'; // redefine this if you want a custom user class.  The custom user class should inherit from WebSocketUser.
     protected $maxBufferSize;
@@ -53,20 +57,26 @@ class WebSocketServer extends Thread {
     protected $headerSecWebSocketProtocolRequired   = false;
     protected $headerSecWebSocketExtensionsRequired = false;
 
-    function __construct($addr, $port, $bufferLength = 2048, $stackable) {
+    function __construct($addr, $port, $bufferLength = 2048, $stackable, $tickinterval) {
         $this->maxBufferSize = $bufferLength;
         $this->users = new Stackable;
         $this->heldMessages = new Stackable;
 
         $this->stackable = $stackable;
+        $this->tickinterval = $tickinterval;
 
+        Log::info("Constructing new WebSocketServer Thread");
         // Construction of $this->master moved to run()
     }
 
     // Called immediately when the data is received.
     // Method Bot Changed
     protected function process($user, $message) {
-
+        $this->stackable[] = [
+            'type' => 'web',
+            'user' => $user,
+            'message' => $message
+        ];
     }
 
     protected function connected($user) {}        // Called after the handshake response is sent to the client. Bot Changed.
@@ -77,6 +87,7 @@ class WebSocketServer extends Thread {
         // the handshake has completed.
     }
 
+    // Method Bot New
     public function broadcastMessage($message) {
         foreach($this->users as $user) {
             $this->send($user, $message);
@@ -125,6 +136,12 @@ class WebSocketServer extends Thread {
         }
     }
 
+    public function start($options = null) {
+        parent::start();
+
+        Log::info("Starting WebSocketServer thread", [ 'id' => $this->getThreadId() ]); // Acceptable because it's being called from the main thread
+    }
+
     /**
      * Main processing loop
      */
@@ -132,20 +149,21 @@ class WebSocketServer extends Thread {
         // Bot Changed: run() originally only contained the while loop
         $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)  or die("Failed: socket_create()");
         socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1) or die("Failed: socket_option()");
-        socket_bind($this->master, $this->addr, $this->port)                      or die("Failed: socket_bind()");
+        socket_bind($this->master, $this->addr, $this->port)          or die("Failed: socket_bind()");
         socket_listen($this->master,20)                               or die("Failed: socket_listen()");
         $this->sockets['m'] = $this->master;
         $this->stdout("Server started\nListening on: $this->addr:$this->port\nMaster socket: ".$this->master);
 
         while(true) {
+            if($this->_shutdown) break; // Bot Changed
             if (empty($this->sockets)) {
                 $this->sockets['m'] = $this->master;
             }
             $read = $this->sockets;
             $write = $except = null;
-            //$this->_tick(); // Bot Changed
-            //$this->tick(); // Bot Changed
-            @socket_select($read,$write,$except,1); //TODO: Replace the 1 with the current tick interval
+            $this->_tick();
+            $this->tick();
+            @socket_select($read,$write,$except,$this->tickinterval); // Bot Changed
             foreach ($read as $socket) {
                 if ($socket == $this->master) {
                     $client = socket_accept($socket);
@@ -204,11 +222,21 @@ class WebSocketServer extends Thread {
                     }
                 }
             }
-            $this->tick(); // Retrieves messages from processing queue, Bot Changed
-            $this->_tick(); // Sends messages retrieved, Bot Changed
         }
 
+        foreach($this->sockets as $socket) // Bot Changed
+            $this->disconnect($socket); // Bot Changed
+
         socket_close($this->master); // Bot Changed
+    }
+
+    // Method Bot Added
+    public function kill() {
+        parent::kill();
+
+        $this->_shutdown = true;
+
+        Log::info("Destroyed WebSocketServer thread", [ 'id' => $this->getThreadId() ]); // Acceptable because it's being called from the main thread
     }
 
     protected function connect($socket) {
