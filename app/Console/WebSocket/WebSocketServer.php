@@ -62,6 +62,8 @@ class WebSocketServer extends Thread {
         $this->users = new Stackable;
         $this->heldMessages = new Stackable;
 
+        $this->addr = $addr;
+        $this->port = $port;
         $this->stackable = $stackable;
         $this->tickinterval = $tickinterval;
 
@@ -147,15 +149,16 @@ class WebSocketServer extends Thread {
      */
     public function run() {
         // Bot Changed: run() originally only contained the while loop
-        $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)  or die("Failed: socket_create()");
-        socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1) or die("Failed: socket_option()");
-        socket_bind($this->master, $this->addr, $this->port)          or die("Failed: socket_bind()");
-        socket_listen($this->master,20)                               or die("Failed: socket_listen()");
+        $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)  or $this->stderr("Failed: socket_create()", true);
+        socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1) or $this->stderr("Failed: socket_option()", true);
+        socket_bind($this->master, $this->addr, $this->port++)          or $this->stderr("Failed: socket_bind()", true);
+        socket_listen($this->master,20)                               or $this->stderr("Failed: socket_listen()", true);
         $this->sockets['m'] = $this->master;
         $this->stdout("Server started\nListening on: $this->addr:$this->port\nMaster socket: ".$this->master);
 
         while(true) {
-            if($this->_shutdown) break; // Bot Changed
+            if($this->_shutdown == true) break; // Bot Changed
+            $this->stdout("WTF");
             if (empty($this->sockets)) {
                 $this->sockets['m'] = $this->master;
             }
@@ -226,6 +229,8 @@ class WebSocketServer extends Thread {
 
         foreach($this->sockets as $socket) // Bot Changed
             $this->disconnect($socket); // Bot Changed
+
+        $this->stdout("This is actually executing? :O");
 
         socket_close($this->master); // Bot Changed
     }
@@ -397,7 +402,7 @@ class WebSocketServer extends Thread {
         }
     }
 
-    public function stderr($message) {
+    public function stderr($message, $shutdown = false) { // Bot Changed
         if ($this->interactive) {
             //echo "$message\n";
             $this->stackable[] = [
@@ -407,6 +412,10 @@ class WebSocketServer extends Thread {
                 'args' => []
             ];
         }
+
+        // Bot Changed
+        if($shutdown)
+            $this->stackable[] = ['type' => "shutdown"];
     }
 
     protected function frame($message, $user, $messageType='text', $messageContinues=false) {
