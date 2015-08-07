@@ -45,9 +45,9 @@ class WebSocketServer extends Thread {
     protected $userClass = 'WebSocketUser'; // redefine this if you want a custom user class.  The custom user class should inherit from WebSocketUser.
     protected $maxBufferSize;
     protected $master;
+    protected $users; // Bot Changed
     protected $heldMessages; // Bot Changed
     protected $sockets                              = array();
-    protected $users                                = array();
     protected $interactive                          = true;
     protected $headerOriginRequired                 = false;
     protected $headerSecWebSocketProtocolRequired   = false;
@@ -55,6 +55,7 @@ class WebSocketServer extends Thread {
 
     function __construct($addr, $port, $bufferLength = 2048, $stackable) {
         $this->maxBufferSize = $bufferLength;
+        $this->users = new Stackable;
         $this->heldMessages = new Stackable;
 
         $this->stackable = $stackable;
@@ -64,7 +65,7 @@ class WebSocketServer extends Thread {
 
     // Called immediately when the data is received.
     // Method Bot Changed
-    protected function process($user,$message) {
+    protected function process($user, $message) {
 
     }
 
@@ -74,6 +75,12 @@ class WebSocketServer extends Thread {
     protected function connecting($user) {
         // Override to handle a connecting user, after the instance of the User is created, but before
         // the handshake has completed.
+    }
+
+    public function broadcastMessage($message) {
+        foreach($this->users as $user) {
+            $this->send($user, $message);
+        }
     }
 
     // Method Bot New
@@ -125,10 +132,10 @@ class WebSocketServer extends Thread {
         // Bot Changed: run() originally only contained the while loop
         $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)  or die("Failed: socket_create()");
         socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1) or die("Failed: socket_option()");
-        socket_bind($this->master, $addr, $port)                      or die("Failed: socket_bind()");
+        socket_bind($this->master, $this->addr, $this->port)                      or die("Failed: socket_bind()");
         socket_listen($this->master,20)                               or die("Failed: socket_listen()");
         $this->sockets['m'] = $this->master;
-        $this->stdout("Server started\nListening on: $addr:$port\nMaster socket: ".$this->master);
+        $this->stdout("Server started\nListening on: $this->addr:$this->port\nMaster socket: ".$this->master);
 
         while(true) {
             if (empty($this->sockets)) {
@@ -352,13 +359,25 @@ class WebSocketServer extends Thread {
 
     public function stdout($message) {
         if ($this->interactive) {
-            echo "$message\n"; // TODO: Use Log facade
+            //echo "$message\n";
+            $this->stackable[] = [
+                'type' => "botlog",
+                'loglevel' => "INFO",
+                'message' => $message,
+                'args' => []
+            ];
         }
     }
 
     public function stderr($message) {
         if ($this->interactive) {
-            echo "$message\n"; // TODO: Use Log facade
+            //echo "$message\n";
+            $this->stackable[] = [
+                'type' => "botlog",
+                'loglevel' => "ERROR",
+                'message' => $message,
+                'args' => []
+            ];
         }
     }
 
