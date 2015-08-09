@@ -51,11 +51,11 @@ class GameServerListenThread extends Thread {
         $this->_tickinterval = $tickinterval;
     }
 
-    public function start($options = 0)
+    public function start($options = null)
     {
         parent::start($options);
 
-        Log::info("Starting GameServerListenThread thread", [ 'id' => $this->getThreadId() ]); // Acceptable because it's being called from the main thread
+        Log::info("Started GameServerListenThread thread", [ 'id' => $this->getThreadId() ]); // Acceptable because it's being called from the main thread
     }
 
     public function run()

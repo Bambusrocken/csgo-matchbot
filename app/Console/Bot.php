@@ -25,7 +25,7 @@
 
 namespace Bot\Console;
 
-use Bot\Console\WebSocket\WebSocketServer;
+use Bot\Console\WebSocket\WebSocketServerThread;
 use Bot\MatchManagement\Contracts\MatchManager;
 use Bot\MatchManagement\GameServerListenThread;
 use Config;
@@ -40,7 +40,7 @@ use Stackable;
  */
 class Bot {
     // Don't forget to change tick interval in GameServerListenThread
-    const TICK_INTERVAL = 7.8125; // Tick interval in milliseconds, for 128 ticks type 7.8125, for 64 ticks type 15.625, for another tickrate just calculate (1/<tickrate>)*1000
+    const TICK_INTERVAL = 15.625; // Tick interval in milliseconds, for 128 ticks type 7.8125, for 64 ticks type 15.625, for another tickrate just calculate (1/<tickrate>)*1000
 
     private $_matchManager;
 
@@ -63,7 +63,7 @@ class Bot {
         $ip = $ipport[0];
         $port = $ipport[1];
         Log::debug("IP Port", [$ip, $port]);
-        $this->_websocketServerThread = new WebSocketServer($ip, $port, 2048, $this->_stackable, self::TICK_INTERVAL);
+        $this->_websocketServerThread = new WebSocketServerThread($ip, $port, $this->_stackable);
     }
 
     public function run() {

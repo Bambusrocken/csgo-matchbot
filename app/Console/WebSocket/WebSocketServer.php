@@ -22,89 +22,53 @@
  * Laravel Framework Version 5.1
  * Copyright (c) <Taylor Otwell>
  *
- * This file is part of PHP-WebSocket.
- * Copyright (c) 2012, Adam Alexander
- * All rights reserved.
+ * This file is NOT a part of PHP-WebSocket.
  */
 
 // Any lines that have been modified from the original file will be marked with some form of "// Bot Changed" in case I need to update this class from the original PHP-WebSockets repository
 
 //require_once('./daemonize.php');
-//require_once('./WebSocketUser.php'); // Bot Changed
+//require_once('./users.php');
 
 namespace Bot\Console\WebSocket;
 
-use Log;
-use Stackable;
+use Bot\Console\Bot;
 use Thread;
 
-class WebSocketServer extends Thread {
-
-    private $_shutdown = false; // Bot Changed
-
-    protected $addr, $port; // Bot Changed
-    protected $stackable; // Bot Changed
-    protected $tickinterval; // Bot Changed
+abstract class WebSocketServer extends Thread { // Bot Changed
+    protected $shutdown = false, $tickinterval = Bot::TICK_INTERVAL; // Bot Changed
 
     protected $userClass = 'WebSocketUser'; // redefine this if you want a custom user class.  The custom user class should inherit from WebSocketUser.
     protected $maxBufferSize;
     protected $master;
-    protected $users; // Bot Changed
-    protected $heldMessages; // Bot Changed
-    protected $sockets                              = array();
+    private $sockets                              = array();
+    private $users                                = array();
+    private $heldMessages                         = array();
     protected $interactive                          = true;
     protected $headerOriginRequired                 = false;
     protected $headerSecWebSocketProtocolRequired   = false;
     protected $headerSecWebSocketExtensionsRequired = false;
-
-    function __construct($addr, $port, $bufferLength = 2048, $stackable, $tickinterval) {
+    function __construct($addr, $port, $bufferLength = 2048) {
         $this->maxBufferSize = $bufferLength;
-        $this->users = new Stackable;
-        $this->heldMessages = new Stackable;
-
-        $this->addr = $addr;
-        $this->port = $port;
-        $this->stackable = $stackable;
-        $this->tickinterval = $tickinterval;
-
-        Log::info("Constructing new WebSocketServer Thread");
-        // Construction of $this->master moved to run()
+        $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)  or die("Failed: socket_create()");
+        socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1) or die("Failed: socket_option()");
+        socket_bind($this->master, $addr, $port)                      or die("Failed: socket_bind()");
+        socket_listen($this->master,20)                               or die("Failed: socket_listen()");
+        $this->sockets[] = $this->master; // Bot Changed
+        $this->stdout("Server started\nListening on: $addr:$port\nMaster socket: ".$this->master);
     }
-
-    // Called immediately when the data is received.
-    // Method Bot Changed
-    protected function process($user, $message) {
-        $this->stackable[] = [
-            'type' => 'web',
-            'user' => $user,
-            'message' => $message
-        ];
-    }
-
-    protected function connected($user) {}        // Called after the handshake response is sent to the client. Bot Changed.
-    protected function closed($user) {}           // Called after the connection is closed. Bot Changed.
-
+    abstract protected function process($user,$message); // Called immediately when the data is recieved.
+    abstract protected function connected($user);        // Called after the handshake response is sent to the client.
+    abstract protected function closed($user);           // Called after the connection is closed.
     protected function connecting($user) {
         // Override to handle a connecting user, after the instance of the User is created, but before
         // the handshake has completed.
     }
 
-    // Method Bot New
-    public function broadcastMessage($message) {
-        foreach($this->users as $user) {
-            $this->send($user, $message);
-        }
-    }
-
-    // Method Bot New
-    public function sendMessage($user, $message) {
-        $this->send($user, $message);
-    }
-
-    protected function send($user, $message, $now = false) {
-        if ($user->handshake && $now) { // Bot Changed.
+    protected function send($user, $message) {
+        if ($user->handshake) {
             $message = $this->frame($message,$user);
-            $result = @socket_write($user->socket, $message, strlen($message));
+            $result = socket_write($user->socket, $message, strlen($message));
         }
         else {
             // User has not yet performed their handshake.  Store for sending later.
@@ -112,12 +76,10 @@ class WebSocketServer extends Thread {
             $this->heldMessages[] = $holdingMessage;
         }
     }
-
     protected function tick() {
         // Override this for any process that should happen periodically.  Will happen at least once
         // per second, but possibly more often.
     }
-
     protected function _tick() {
         // Core maintenance processes, such as retrying failed messages.
         foreach ($this->heldMessages as $key => $hm) {
@@ -127,7 +89,7 @@ class WebSocketServer extends Thread {
                     $found = true;
                     if ($currentUser->handshake) {
                         unset($this->heldMessages[$key]);
-                        $this->send($currentUser, $hm['message'], true);
+                        $this->send($currentUser, $hm['message']);
                     }
                 }
             }
@@ -137,36 +99,32 @@ class WebSocketServer extends Thread {
             }
         }
     }
-
-    public function start($options = null) {
-        parent::start();
-
-        Log::info("Starting WebSocketServer thread", [ 'id' => $this->getThreadId() ]); // Acceptable because it's being called from the main thread
-    }
-
     /**
      * Main processing loop
      */
     public function run() {
-        // Bot Changed: run() originally only contained the while loop
-        $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)  or $this->stderr("Failed: socket_create()", true);
-        socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1) or $this->stderr("Failed: socket_option()", true);
-        socket_bind($this->master, $this->addr, $this->port++)          or $this->stderr("Failed: socket_bind()", true);
-        socket_listen($this->master,20)                               or $this->stderr("Failed: socket_listen()", true);
-        $this->sockets['m'] = $this->master;
-        $this->stdout("Server started\nListening on: $this->addr:$this->port\nMaster socket: ".$this->master);
-
         while(true) {
-            if($this->_shutdown == true) break; // Bot Changed
-            $this->stdout("WTF");
+            if($this->shutdown) // Bot Changed: If statement added by BOT
+            {
+                foreach($this->sockets as $socket)
+                {
+                    $this->disconnect($socket);
+                }
+
+                break;
+            }echo "Loop\n";
             if (empty($this->sockets)) {
-                $this->sockets['m'] = $this->master;
-            }
-            $read = $this->sockets;
+                $this->sockets[] = $this->master; // Bot Changed
+            }echo "Loop2\n";
+            $read = $this->sockets;echo "Loop3\n"; // This line blocks if $this->sockets is an instance of Stackable
             $write = $except = null;
             $this->_tick();
             $this->tick();
-            @socket_select($read,$write,$except,$this->tickinterval); // Bot Changed
+            if(socket_select($read, $write, $except, 0) === 0) // Bot Changed, this line throws an error if $this->sockets is an array
+            {
+                usleep($this->tickinterval); // Bot Changed
+                continue; // Bot Changed
+            }
             foreach ($read as $socket) {
                 if ($socket == $this->master) {
                     $client = socket_accept($socket);
@@ -180,7 +138,7 @@ class WebSocketServer extends Thread {
                     }
                 }
                 else {
-                    $numBytes = @socket_recv($socket, $buffer, $this->maxBufferSize, 0);
+                    $numBytes = socket_recv($socket, $buffer, $this->maxBufferSize, 0);
                     if ($numBytes === false) {
                         $sockErrNo = socket_last_error($socket);
                         switch ($sockErrNo)
@@ -193,14 +151,13 @@ class WebSocketServer extends Thread {
                             case 111: // ECONNREFUSED -- Connection refused -- We shouldn't see this one, since we're listening... Still not a critical error.
                             case 112: // EHOSTDOWN    -- Host is down -- Again, we shouldn't see this, and again, not critical because it's just one connection and we still want to listen to/for others.
                             case 113: // EHOSTUNREACH -- No route to host
-                            case 121: // EREMOTEIO    -- Remote I/O error -- Their hard drive just blew up.
+                            case 121: // EREMOTEIO    -- Rempte I/O error -- Their hard drive just blew up.
                             case 125: // ECANCELED    -- Operation canceled
 
                                 $this->stderr("Unusual disconnect on socket " . $socket);
                                 $this->disconnect($socket, true, $sockErrNo); // disconnect before clearing error, in case someone with their own implementation wants to check for error conditions on the socket.
                                 break;
                             default:
-
                                 $this->stderr('Socket error: ' . socket_strerror($sockErrNo));
                         }
 
@@ -226,31 +183,13 @@ class WebSocketServer extends Thread {
                 }
             }
         }
-
-        foreach($this->sockets as $socket) // Bot Changed
-            $this->disconnect($socket); // Bot Changed
-
-        $this->stdout("This is actually executing? :O");
-
-        socket_close($this->master); // Bot Changed
     }
-
-    // Method Bot Added
-    public function kill() {
-        parent::kill();
-
-        $this->_shutdown = true;
-
-        Log::info("Destroyed WebSocketServer thread", [ 'id' => $this->getThreadId() ]); // Acceptable because it's being called from the main thread
-    }
-
     protected function connect($socket) {
         $user = new $this->userClass(uniqid('u'), $socket);
         $this->users[$user->id] = $user;
         $this->sockets[$user->id] = $socket;
         $this->connecting($user);
     }
-
     protected function disconnect($socket, $triggerClosed = true, $sockErrNo = null) {
         $disconnectedUser = $this->getUserBySocket($socket);
 
@@ -264,7 +203,6 @@ class WebSocketServer extends Thread {
             if (!is_null($sockErrNo)) {
                 socket_clear_error($socket);
             }
-
             if ($triggerClosed) {
                 $this->closed($disconnectedUser);
                 socket_close($disconnectedUser->socket);
@@ -275,7 +213,6 @@ class WebSocketServer extends Thread {
             }
         }
     }
-
     protected function doHandshake($user, $buffer) {
         $magicGUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
         $headers = array();
@@ -310,7 +247,6 @@ class WebSocketServer extends Thread {
             $handshakeResponse = "HTTP/1.1 400 Bad Request";
         }
         else {
-
         }
         if (!isset($headers['sec-websocket-version']) || strtolower($headers['sec-websocket-version']) != 13) {
             $handshakeResponse = "HTTP/1.1 426 Upgrade Required\r\nSec-WebSocketVersion: 13";
@@ -324,63 +260,49 @@ class WebSocketServer extends Thread {
         if (($this->headerSecWebSocketExtensionsRequired && !isset($headers['sec-websocket-extensions'])) || ($this->headerSecWebSocketExtensionsRequired && !$this->checkWebsocExtensions($headers['sec-websocket-extensions']))) {
             $handshakeResponse = "HTTP/1.1 400 Bad Request";
         }
-
         // Done verifying the _required_ headers and optionally required headers.
-
         if (isset($handshakeResponse)) {
             socket_write($user->socket,$handshakeResponse,strlen($handshakeResponse));
             $this->disconnect($user->socket);
             return;
         }
-
         $user->headers = $headers;
         $user->handshake = $buffer;
-
         $webSocketKeyHash = sha1($headers['sec-websocket-key'] . $magicGUID);
-
         $rawToken = "";
         for ($i = 0; $i < 20; $i++) {
             $rawToken .= chr(hexdec(substr($webSocketKeyHash,$i*2, 2)));
         }
         $handshakeToken = base64_encode($rawToken) . "\r\n";
-
         $subProtocol = (isset($headers['sec-websocket-protocol'])) ? $this->processProtocol($headers['sec-websocket-protocol']) : "";
         $extensions = (isset($headers['sec-websocket-extensions'])) ? $this->processExtensions($headers['sec-websocket-extensions']) : "";
-
         $handshakeResponse = "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: $handshakeToken$subProtocol$extensions\r\n";
         socket_write($user->socket,$handshakeResponse,strlen($handshakeResponse));
         $this->connected($user);
     }
-
     protected function checkHost($hostName) {
         return true; // Override and return false if the host is not one that you would expect.
         // Ex: You only want to accept hosts from the my-domain.com domain,
         // but you receive a host from malicious-site.com instead.
     }
-
     protected function checkOrigin($origin) {
         return true; // Override and return false if the origin is not one that you would expect.
     }
-
     protected function checkWebsocProtocol($protocol) {
         return true; // Override and return false if a protocol is not found that you would expect.
     }
-
     protected function checkWebsocExtensions($extensions) {
         return true; // Override and return false if an extension is not found that you would expect.
     }
-
     protected function processProtocol($protocol) {
         return ""; // return either "Sec-WebSocket-Protocol: SelectedProtocolFromClientList\r\n" or return an empty string.
         // The carriage return/newline combo must appear at the end of a non-empty string, and must not
         // appear at the beginning of the string nor in an otherwise empty string, or it will be considered part of
         // the response body, which will trigger an error in the client as it will not be formatted correctly.
     }
-
     protected function processExtensions($extensions) {
         return ""; // return either "Sec-WebSocket-Extensions: SelectedExtensions\r\n" or return an empty string.
     }
-
     protected function getUserBySocket($socket) {
         foreach ($this->users as $user) {
             if ($user->socket == $socket) {
@@ -389,35 +311,16 @@ class WebSocketServer extends Thread {
         }
         return null;
     }
-
     public function stdout($message) {
         if ($this->interactive) {
-            //echo "$message\n";
-            $this->stackable[] = [
-                'type' => "botlog",
-                'loglevel' => "INFO",
-                'message' => $message,
-                'args' => []
-            ];
+            echo "$message\n";
         }
     }
-
-    public function stderr($message, $shutdown = false) { // Bot Changed
+    public function stderr($message) {
         if ($this->interactive) {
-            //echo "$message\n";
-            $this->stackable[] = [
-                'type' => "botlog",
-                'loglevel' => "ERROR",
-                'message' => $message,
-                'args' => []
-            ];
+            echo "$message\n";
         }
-
-        // Bot Changed
-        if($shutdown)
-            $this->stackable[] = ['type' => "shutdown"];
     }
-
     protected function frame($message, $user, $messageType='text', $messageContinues=false) {
         switch ($messageType) {
             case 'continuous':
@@ -446,7 +349,6 @@ class WebSocketServer extends Thread {
             $b1 += 128;
             $user->sendingContinuous = false;
         }
-
         $length = strlen($message);
         $lengthField = "";
         if ($length < 126) {
@@ -460,7 +362,6 @@ class WebSocketServer extends Thread {
                 $hexLength = '0' . $hexLength;
             }
             $n = strlen($hexLength) - 2;
-
             for ($i = $n; $i >= 0; $i=$i-2) {
                 $lengthField = chr(hexdec(substr($hexLength, $i, 2))) . $lengthField;
             }
@@ -475,7 +376,6 @@ class WebSocketServer extends Thread {
                 $hexLength = '0' . $hexLength;
             }
             $n = strlen($hexLength) - 2;
-
             for ($i = $n; $i >= 0; $i=$i-2) {
                 $lengthField = chr(hexdec(substr($hexLength, $i, 2))) . $lengthField;
             }
@@ -483,7 +383,6 @@ class WebSocketServer extends Thread {
                 $lengthField = chr(0) . $lengthField;
             }
         }
-
         return chr($b1) . chr($b2) . $lengthField . $message;
     }
 
@@ -498,7 +397,6 @@ class WebSocketServer extends Thread {
         $fullpacket=$packet;
         $frame_pos=0;
         $frame_id=1;
-
         while($frame_pos<$length) {
             $headers = $this->extractHeaders($packet);
             $headers_size = $this->calcoffset($headers);
@@ -506,7 +404,6 @@ class WebSocketServer extends Thread {
 
             //split frame from packet and process it
             $frame=substr($fullpacket,$frame_pos,$framesize);
-
             if (($message = $this->deframe($frame, $user,$headers)) !== FALSE) {
                 if ($user->hasSentClose) {
                     $this->disconnect($user->socket);
@@ -525,7 +422,6 @@ class WebSocketServer extends Thread {
             $frame_id++;
         }
     }
-
     protected function calcoffset($headers) {
         $offset = 2;
         if ($headers['hasmask']) {
@@ -538,7 +434,6 @@ class WebSocketServer extends Thread {
         }
         return $offset;
     }
-
     protected function deframe($message, &$user) {
         //echo $this->strtohex($message);
         $headers = $this->extractHeaders($message);
@@ -562,7 +457,6 @@ class WebSocketServer extends Thread {
                 $willClose = true;
                 break;
         }
-
         /* Deal by split_packet() as now deframe() do only one frame at a time.
         if ($user->handlingPartialPacket) {
           $message = $user->partialBuffer . $message;
@@ -574,14 +468,11 @@ class WebSocketServer extends Thread {
         if ($this->checkRSVBits($headers,$user)) {
             return false;
         }
-
         if ($willClose) {
             // todo: fail the connection
             return false;
         }
-
         $payload = $user->partialMessage . $this->extractPayload($message,$headers);
-
         if ($pongReply) {
             $reply = $this->frame($payload,$user,'pong');
             socket_write($user->socket,$reply,strlen($reply));
@@ -601,9 +492,7 @@ class WebSocketServer extends Thread {
                 return false;
             }
         }
-
         $payload = $this->applyMask($headers,$payload);
-
         if ($headers['fin']) {
             $user->partialMessage = "";
             return $payload;
@@ -611,7 +500,6 @@ class WebSocketServer extends Thread {
         $user->partialMessage = $payload;
         return false;
     }
-
     protected function extractHeaders($message) {
         $header = array('fin'     => $message[0] & chr(128),
             'rsv1'    => $message[0] & chr(64),
@@ -622,7 +510,6 @@ class WebSocketServer extends Thread {
             'length'  => 0,
             'mask'    => "");
         $header['length'] = (ord($message[1]) >= 128) ? ord($message[1]) - 128 : ord($message[1]);
-
         if ($header['length'] == 126) {
             if ($header['hasmask']) {
                 $header['mask'] = $message[4] . $message[5] . $message[6] . $message[7];
@@ -650,7 +537,6 @@ class WebSocketServer extends Thread {
         //$this->printHeaders($header);
         return $header;
     }
-
     protected function extractPayload($message,$headers) {
         $offset = 2;
         if ($headers['hasmask']) {
@@ -664,7 +550,6 @@ class WebSocketServer extends Thread {
         }
         return substr($message,$offset);
     }
-
     protected function applyMask($headers,$payload) {
         $effectiveMask = "";
         if ($headers['hasmask']) {
@@ -673,7 +558,6 @@ class WebSocketServer extends Thread {
         else {
             return $payload;
         }
-
         while (strlen($effectiveMask) < strlen($payload)) {
             $effectiveMask .= $mask;
         }
@@ -689,7 +573,6 @@ class WebSocketServer extends Thread {
         }
         return false;
     }
-
     protected function strtohex($str) {
         $strout = "";
         for ($i = 0; $i < strlen($str); $i++) {
@@ -710,7 +593,6 @@ class WebSocketServer extends Thread {
         }
         return $strout . "\n";
     }
-
     protected function printHeaders($headers) {
         echo "Array\n(\n";
         foreach ($headers as $key => $value) {
@@ -719,9 +601,7 @@ class WebSocketServer extends Thread {
             }
             else {
                 echo "\t[$key] => ".$this->strtohex($value)."\n";
-
             }
-
         }
         echo ")\n";
     }
