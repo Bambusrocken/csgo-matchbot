@@ -23,12 +23,11 @@
  *
  */
 
-namespace Bot\Console;
+namespace Bot\Console\Threads;
 
 use Thread;
 
-class ConsoleInputHandler extends Thread
-{
+class ConsoleInputHandler extends Thread {
 
     private $_stackable;
 

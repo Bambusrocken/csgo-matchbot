@@ -26,8 +26,6 @@
 namespace Bot\Console\Commands;
 
 use Bot\Console\Bot;
-use Bot\MatchManagement\StackableQueueWrapper;
-use Bot\MatchManagement\UDPSocket;
 use Config;
 use Illuminate\Console\Command;
 use Log;

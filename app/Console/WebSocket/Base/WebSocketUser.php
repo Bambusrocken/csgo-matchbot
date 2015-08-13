@@ -1,12 +1,12 @@
 <?php
 
 /*
- * This file is part of PHP-WebSocket.
+ * This file is part of PHP-WebSockets.
  * Copyright (c) 2012, Adam Alexander
  * All rights reserved.
  */
 
-namespace Bot\Console\WebSocket;
+namespace Bot\Console\WebSocket\Base;
 
 class WebSocketUser {
 

@@ -23,13 +23,16 @@
  *
  */
 
-namespace Bot\MatchManagement;
+namespace Bot\Console\Threads;
 
+use Bot\Console\Bot;
 use Config;
 use Log;
 use Thread;
 
 class GameServerListenThread extends Thread {
+
+    private $_tickinterval = Bot::TICK_INTERVAL;
 
     private $_stackable;
 
@@ -38,17 +41,13 @@ class GameServerListenThread extends Thread {
     private $_socket;
     private $_ipPort;
 
-    private $_tickinterval;
-
-    public function __construct($stackable, $tickinterval)
+    public function __construct($stackable)
     {
         Log::info("Constructing new GameServerListenThread");
 
         $this->_stackable = $stackable;
 
         $this->_ipPort = explode(':', Config::get('app.ipport'));
-
-        $this->_tickinterval = $tickinterval;
     }
 
     public function start($options = null)

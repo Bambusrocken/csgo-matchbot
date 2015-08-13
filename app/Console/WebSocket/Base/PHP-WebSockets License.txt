@@ -1,5 +1,5 @@
-PHP WebSockets
-This directory contains files part of the project "PHP-WebSockets" ( https://github.com/ghedipunk/PHP-Websockets ).
+PHP-WebSockets
+This directory contains files part of the project "PHP-WebSockets" ( https://github.com/ghedipunk/PHP-WebSockets ).
 The copyright notice for these files is stored in this file.
 
 Copyright (c) 2012, Adam Alexander

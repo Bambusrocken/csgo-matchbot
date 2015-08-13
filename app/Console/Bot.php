@@ -25,9 +25,10 @@
 
 namespace Bot\Console;
 
-use Bot\Console\WebSocket\WebSocketServerThread;
+use Bot\Console\Threads\ConsoleInputHandler;
+use Bot\Console\Threads\GameServerListenThread;
+use Bot\Console\Threads\WebSocketServerThread;
 use Bot\MatchManagement\Contracts\MatchManager;
-use Bot\MatchManagement\GameServerListenThread;
 use Config;
 use Log;
 use Monolog\Logger;
@@ -63,7 +64,7 @@ class Bot {
         $ip = $ipport[0];
         $port = $ipport[1];
         Log::debug("IP Port", [$ip, $port]);
-        $this->_websocketServerThread = new WebSocketServerThread($ip, $port, $this->_stackable);
+        $this->_websocketServerThread = new WebSocketServerThread($this->_stackable, $ip, $port);
     }
 
     public function run() {
@@ -71,7 +72,9 @@ class Bot {
 
         $this->_consoleThread->start();
         $this->_gameserverListenThread->start();
-        $this->_websocketServerThread->start();
+        //$this->_websocketServerThread->start();
+
+        $this->_websocketServerThread->run();
 
         while(true) {
             //Main bot loop
