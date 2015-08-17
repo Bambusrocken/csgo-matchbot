@@ -26,19 +26,43 @@
 
 namespace Bot\Console\WebSocket;
 
+use Bot\Console\Bot;
 use Bot\Console\WebSocket\Base\WebSocketServerBase;
 
-class WebSocketServer extends WebSocketServerBase {
+/**
+ * Class WebSocketServer
+ * Class meant to extend the functionality of the basic WebSocketServerBase class.
+ * To fully work, some changes are necessary to the WebSocketServerBase class. These changes are listed here, in case updates to the WebSocketServerBase class are ever necessary:
+ *  Added D4rKDeagle's Bot header
+ *  Added notice saying this part is also file of PHP-WebSockets on the bot's header
+ *  Line 30, added comment saying any modified lines are commented
+ *  Lines 32 and 33, Commented require_once lines
+ *  Line 35, added namespace declaration
+ *  Line 38 (line after class declaration), added protected $shutdown = false;
+ *  Line 52 (first constructor line), commented lines after $this->maxBufferSize = $bufferLength;
+ *  Line 109 (line after the while(true) { line), added if($this->shutdown) break;
+ *  Line 117 (socket_select line), changed timeout on socket_select to 0
+ *
+ * @package Bot\Console\WebSocket
+ */
+class WebSocketServer extends WebSocketServerBase
+{
 
     private $_stackable;
 
-    public function __construct($addr, $port, $stackable, &$shutdown)
+    private $_addr;
+    private $_port;
+
+    private $_tickinterval = Bot::TICK_INTERVAL;
+
+    public function __construct($addr, $port, $stackable)
     {
         parent::__construct($addr, $port, 2048);
 
         $this->_stackable = $stackable;
 
-        $this->shutdown = &$shutdown;
+        $this->_addr = $addr;
+        $this->_port = $port;
     }
 
     protected function process($user, $message)
@@ -62,22 +86,42 @@ class WebSocketServer extends WebSocketServerBase {
         echo "WHAT ARE YOU FUCKING DOING";
     }
 
-    public function stdout($message, $args = [])
+    public function run()
     {
-        echo "$message\n";
-        if(!$this->interactive) return;
+        $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP) or die("Failed: socket_create()");
+        socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1) or die("Failed: socket_option()");
+        socket_bind($this->master, $this->_addr, $this->_port) or die("Failed: socket_bind()");
+        socket_listen($this->master, 20) or die("Failed: socket_listen()");
+        $this->sockets['m'] = $this->master; // Bot Changed
+        $this->stdout("Server started\nListening on: $this->_addr:$this->_port\nMaster socket: " . $this->master); // */
+
+        parent::run();
+
+        foreach ($this->sockets as $socket) {
+            $this->disconnect($socket);
+        }
+    }
+
+    protected function tick()
+    {
+        usleep($this->_tickinterval);
+    }
+
+    public function stdout($message)
+    {
+        if (!$this->interactive) return;
 
         $this->stackable[] = [
             'type' => "botlog",
             'loglevel' => "INFO",
             'message' => $message,
-            'args' => $args
+            'args' => []
         ];
     }
 
     public function stderr($message)
     {
-        if(!$this->interactive) return;
+        if (!$this->interactive) return;
 
         $this->stackable[] = [
             'type' => "botlog",
@@ -85,5 +129,10 @@ class WebSocketServer extends WebSocketServerBase {
             'message' => $message,
             'args' => []
         ];
+    }
+
+    public function shutdown()
+    {
+        $this->shutdown = true;
     }
 }

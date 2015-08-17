@@ -37,7 +37,7 @@ class WebSocketServerThread extends Thread {
     private $_addr;
     private $_port;
 
-    private $_shutdown = false;
+    private $_websocketServer;
 
     public function __construct($stackable, $addr, $port)
     {
@@ -48,7 +48,7 @@ class WebSocketServerThread extends Thread {
         Log::info("Constructing new WebSocketServerThread");
     }
 
-    public function start($options = null)
+    public function start($options = PTHREADS_INHERIT_NONE)
     {
         parent::start($options);
 
@@ -57,16 +57,22 @@ class WebSocketServerThread extends Thread {
 
     public function run()
     {
-        $websocketServer = new WebSocketServer($this->_addr, $this->_port, $this->_stackable, $this->_shutdown);
+        // Manual Requires are required because of PThreads
+        require_once __DIR__.'/../../../vendor/autoload.php';
 
-        $websocketServer->run();
+        $this->_websocketServer = new WebSocketServer($this->_addr, $this->_port, $this->_stackable);
+
+        $this->_websocketServer->run();
+    }
+
+    public function term()
+    {
+        $this->_websocketServer->shutdown();
     }
 
     public function kill()
     {
         parent::kill();
-
-        $this->_shutdown = true;
 
         Log::info("Destroyed WebSocketServerThread", [ 'id' => $this->getThreadId() ]); // Acceptable because it's being called from the main thread
     }

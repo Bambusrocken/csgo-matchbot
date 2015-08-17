@@ -31,7 +31,6 @@ use Bot\Console\Threads\WebSocketServerThread;
 use Bot\MatchManagement\Contracts\MatchManager;
 use Config;
 use Log;
-use Monolog\Logger;
 use Stackable;
 
 /**
@@ -72,9 +71,7 @@ class Bot {
 
         $this->_consoleThread->start();
         $this->_gameserverListenThread->start();
-        //$this->_websocketServerThread->start();
-
-        $this->_websocketServerThread->run();
+        $this->_websocketServerThread->start();
 
         while(true) {
             //Main bot loop
@@ -102,7 +99,7 @@ class Bot {
                 if($instruction['type'] == 'shutdown')
                 {
                     $shutdown = true;
-                    break;
+                    break; // Breaks out of foreach, not while
                 }
 
                 if($instruction['type'] == 'botlog')
@@ -140,8 +137,7 @@ class Bot {
                 }
             }
 
-            if($shutdown)
-                break;
+            if($shutdown) break;
 
             // TODO: Tick every match manager
 
@@ -150,9 +146,9 @@ class Bot {
 
         Log::info("Starting shutdown");
 
-        $this->_websocketServerThread->kill();
-        $this->_gameserverListenThread->kill();
-        $this->_consoleThread->kill();
+        $this->_websocketServerThread->term();
+        $this->_gameserverListenThread->term();
+        $this->_consoleThread->kill(); // Here we use kill, not term
 
         Log::info("Exiting");
 

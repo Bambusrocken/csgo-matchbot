@@ -34,10 +34,8 @@
 
 namespace Bot\Console\WebSocket\Base;
 
-use Bot\Console\Bot;
-
 abstract class WebSocketServerBase {
-    protected $shutdown, $tickinterval = Bot::TICK_INTERVAL; // Bot Changed
+    protected $shutdown = false; // Bot Changed
 
     protected $userClass = 'WebSocketUser'; // redefine this if you want a custom user class.  The custom user class should inherit from WebSocketUser.
     protected $maxBufferSize;
@@ -51,12 +49,13 @@ abstract class WebSocketServerBase {
     protected $headerSecWebSocketExtensionsRequired = false;
     function __construct($addr, $port, $bufferLength = 2048) {
         $this->maxBufferSize = $bufferLength;
-        $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)  or die("Failed: socket_create()");
+        // Bot Changed
+        /*$this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)  or die("Failed: socket_create()");
         socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1) or die("Failed: socket_option()");
         socket_bind($this->master, $addr, $port)                      or die("Failed: socket_bind()");
         socket_listen($this->master,20)                               or die("Failed: socket_listen()");
         $this->sockets['m'] = $this->master; // Bot Changed
-        $this->stdout("Server started\nListening on: $addr:$port\nMaster socket: ".$this->master);
+        $this->stdout("Server started\nListening on: $addr:$port\nMaster socket: ".$this->master); // */
 
     }
     abstract protected function process($user,$message); // Called immediately when the data is recieved.
@@ -101,20 +100,13 @@ abstract class WebSocketServerBase {
             }
         }
     }
+
     /**
      * Main processing loop
      */
     public function run() {
         while(true) {
-            if($this->shutdown) // Bot Changed: If statement added by BOT
-            {
-                foreach($this->sockets as $socket)
-                {
-                    $this->disconnect($socket);
-                }
-
-                break;
-            }
+            if($this->shutdown) break; // Bot Changed: If statement added by BOT
             if (empty($this->sockets)) {
                 $this->sockets['m'] = $this->master;
             }
@@ -122,7 +114,7 @@ abstract class WebSocketServerBase {
             $write = $except = null;
             $this->_tick();
             $this->tick();
-            @socket_select($read, $write, $except, 0, $this->tickinterval); // Bot Changed
+            @socket_select($read, $write, $except, 0); // Bot Changed: Set timeout to 0
             foreach ($read as $socket) {
                 if ($socket == $this->master) {
                     $client = socket_accept($socket);
@@ -136,7 +128,7 @@ abstract class WebSocketServerBase {
                     }
                 }
                 else {
-                    $numBytes = socket_recv($socket, $buffer, $this->maxBufferSize, 0);
+                    $numBytes = @socket_recv($socket, $buffer, $this->maxBufferSize, 0);
                     if ($numBytes === false) {
                         $sockErrNo = socket_last_error($socket);
                         switch ($sockErrNo)

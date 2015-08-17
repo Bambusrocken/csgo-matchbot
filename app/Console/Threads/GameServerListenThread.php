@@ -63,14 +63,12 @@ class GameServerListenThread extends Thread {
         socket_bind($this->_socket, $this->_ipPort[0], $this->_ipPort[1]) or die("Failed to bind socket");
         socket_set_nonblock($this->_socket);
 
-        while(true)
+        while(!$this->_shutdown)
         {
-            if($this->_shutdown) break;
-
             $readSockets = [ $this->_socket ];
             $writeSockets = [];
             $exceptSockets = [];
-            if(socket_select($readSockets, $writeSockets, $exceptSockets, 0) === 0)
+            if(@socket_select($readSockets, $writeSockets, $exceptSockets, 0) === 0)
             {
                 usleep($this->_tickinterval);
                 continue;
@@ -79,7 +77,7 @@ class GameServerListenThread extends Thread {
             if(!@socket_recvfrom($this->_socket, $buffer, 4096, 0, $remoteIp, $remotePort))
             {
                 $lastError = socket_last_error($this->_socket);
-                if($lastError == 0) break; // Thread shutting down error to unblock the blocking call, no need to log
+                if($lastError == 0 || $lastError == 10038) break; // Thread shutting down error to unblock the blocking call, no need to log
 
                 echo "Socket error num: " . $lastError . ", Socket error string: " . socket_strerror($lastError) . PHP_EOL;
                 continue;
@@ -97,11 +95,14 @@ class GameServerListenThread extends Thread {
         socket_close($this->_socket);
     }
 
+    public function term()
+    {
+        $this->_shutdown = true;
+    }
+
     public function kill()
     {
         parent::kill();
-
-        $this->_shutdown = true;
 
         Log::info("Destroyed GameServerListenThread thread", [ 'id' => $this->getThreadId() ]); // Acceptable because it's being called from the main thread
     }
